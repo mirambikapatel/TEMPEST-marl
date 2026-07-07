@@ -78,6 +78,15 @@ use `run_seeds.py` with a reduced seed count.
   across retraining runs.follow the official install guide at https://pytorch-geometric.readthedocs.io/
 for your exact torch + CUDA/CPU combination.
 
+## Hardware and Runtime
+All experiments were run on a MacBook Pro with an Apple M3~Pro chip
+(11-core CPU, 14-core GPU) and 18~GB unified memory. GPU acceleration
+was provided by PyTorch's Metal Performance Shaders (MPS) backend.
+A single seed of TEMPEST training on a 5000-node Barab\'asi--Albert
+graph for 80 episodes completes in approximately 23 minutes. Inference
+on the Twitter ego-network ($N = 81{,}306$) completes in under a minute
+on the same hardware without retraining.
+
 ---
 
 ## Running the full pipeline
