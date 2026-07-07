@@ -1,44 +1,83 @@
-# TEMPEST: MARL-DQN for Rumour Containment
+# TEMPEST: Multi-Agent RL for Rumour Propagation on Social Networks
 
-Multi-agent reinforcement learning (MARL-DQN) system for containing rumour
-spreading on social networks. Agents use Graph Attention Networks (GAT) with
-GRU memory, partitioned into communities, and are compared against three
-baselines: Classical SIR, Greedy Heuristic, and Centralized DQN.
+Code for the paper "TEMPEST: Modeling Peer Pressure as Social Contagion 
+Using Multi-Agent Reinforcement Learning on Social Networks."
 
-Results are aggregated over **20 independent seeds** for statistical validity.
+**This repository is private while the paper is under revision.**
 
----
+## Overview
 
-## Repository structure
+TEMPEST is a multi-agent reinforcement learning framework for modelling 
+rumour propagation and containment on social networks. Each node is an 
+autonomous agent that chooses to Share, Refute, or Ignore information. 
+The framework combines a peer-pressure contagion kernel, a warm-floor 
+growth-then-fatigue intensity curve, a three-class heterogeneous 
+node-type system with Evolutionary Game Theory payoffs, and a 
+community-partitioned CTDE architecture with per-community GAT-GRU 
+Q-networks.
 
-| File | Purpose |
-|---|---|
-| `marl_core.py` | Core model, environment, train/eval pipeline. Exports `run_full_experiment(seed, cfg)`. |
-| `run_seeds.py` | Parallel multi-seed runner (one process per seed). Produces per-seed JSONs + aggregate. |
-| `run_twitter_sir.py` | Classical SIR baseline on the Stanford SNAP Twitter ego-network. |
-| `plot_aggregate.py` | Loads `aggregate.json`; produces paper figures with mean ± std bands. |
-| `plot_sustained.py` | Sustained infection analysis (post-containment phase) across seeds. |
-| `significance.py` | Paired t-tests and Wilcoxon signed-rank tests across all four baselines. |
-| `make_paper_table.py` | Generates `figures/paper_table.tex` (LaTeX table for the paper). |
-| `add_greedy_to_existing.py` | Backfills Greedy Heuristic metrics into existing seed JSONs without retraining. |
-| `add_centralized_to_existing.py` | Backfills Centralized DQN metrics into existing seed JSONs without retraining. |
-| `launch_full_run.sh` | End-to-end shell script: smoke test → full run → figures. |
-| `twitter_combined.txt` | Stanford SNAP Twitter ego-network edge list (42 MB, ~81K nodes). |
-| `finaloutbreak.ipynb` | Original development notebook (v7 implementation). |
-| `multiseed_results/` | Per-seed JSONs, aggregate JSON/TXT, and per-seed logs. |
-| `figures/` | Paper figures (PNG), metrics CSV, and LaTeX table. |
-| `outputs/` | Additional figures from the notebook and Twitter SIR baseline. |
+## Code Structure
 
----
+The repository contains only source code. Results (per-seed JSONs, 
+aggregate metrics, figures) are reported in the paper, not stored 
+in the repository. Running the code regenerates all outputs.
 
-## Setup
+**Core code:**
+- `marl_core.py` — core functions: environment, MARL system, SIR baseline, GraphCache
+- `finaloutbreak.ipynb` — main experimental notebook
 
+**Runners and scripts:**
+- `run_seeds.py` — multi-seed BA experiment runner
+- `run_twitter_sir.py` — classical SIR baseline on Twitter graph
+- `launch_full_run.sh` — orchestrates the full 20-seed pipeline
+
+**Analysis and plotting:**
+- `plot_aggregate.py` — aggregate metrics visualization
+- `plot_sustained.py` — sustained infection reduction plots
+- `significance.py` — statistical significance tests
+- `make_paper_table.py` — generates paper tables from result JSONs
+
+**Baseline additions:**
+- `add_greedy_to_existing.py` — adds greedy heuristic to result files
+- `add_centralized_to_existing.py` — adds centralised DQN baseline
+
+## Datasets
+
+- **Barabási–Albert graphs**: generated internally via NetworkX
+- **Stanford SNAP Twitter ego-network**: download `twitter_combined.txt` 
+  from https://snap.stanford.edu/data/ego-Twitter.html and place in 
+  the project root
+
+## Running the Code
+
+Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-`torch-geometric` can be finicky about wheel availability. If the above fails,
-follow the official install guide at https://pytorch-geometric.readthedocs.io/
+Run the main 20-seed experiment:
+```bash
+bash launch_full_run.sh
+```
+
+Or run individual components:
+```bash
+python run_seeds.py           # multi-seed BA training
+python run_twitter_sir.py     # Twitter SIR baseline
+python significance.py        # paired t-tests
+python make_paper_table.py    # generate paper tables
+```
+
+Multi-seed runs take multiple hours per seed. For a smoke test, 
+use `run_seeds.py` with a reduced seed count.
+
+## Reproducibility Notes
+
+- Fixed random seed used where applicable (`np.random.seed(0)`)
+- Aggregate results reported in the paper are over 20 independent seeds
+- Trained model weights are not persisted; retraining is required to 
+  reproduce exact per-seed curves. Aggregate statistics are stable 
+  across retraining runs.follow the official install guide at https://pytorch-geometric.readthedocs.io/
 for your exact torch + CUDA/CPU combination.
 
 ---
