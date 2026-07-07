@@ -3,8 +3,6 @@
 Code for the paper "TEMPEST: Modeling Peer Pressure as Social Contagion 
 Using Multi-Agent Reinforcement Learning on Social Networks."
 
-**This repository is private while the paper is under revision.**
-
 ## Overview
 
 TEMPEST is a multi-agent reinforcement learning framework for modelling 
