@@ -1,0 +1,16 @@
+# Core deep learning
+torch==2.10.0
+torchvision==0.25.0
+
+# Graph neural networks
+# NOTE: torch-geometric wheels are build-specific. If `pip install` fails,
+# follow the official installation guide at https://pytorch-geometric.readthedocs.io/
+torch-geometric==2.7.0
+
+# Graph algorithms
+networkx==3.5
+
+# Numerics / stats / plotting
+numpy==2.3.2
+scipy==1.16.3
+matplotlib==3.10.6
