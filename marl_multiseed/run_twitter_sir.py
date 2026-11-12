@@ -4,6 +4,7 @@ Outputs:
     outputs/twitter_sir_curves.json
     outputs/03_twitter_sir.png
 
+Does NOT retrain MARL. Does NOT modify any existing files.
 """
 
 import os, sys, json, time
