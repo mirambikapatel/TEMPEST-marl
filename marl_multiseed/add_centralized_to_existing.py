@@ -1,6 +1,6 @@
 """
 Train Centralized DQN baseline on the existing 20-seed graphs and add
-metrics to each seed_NNN.json in-place.  
+metrics to each seed_NNN.json in-place.  Does NOT retrain TEMPEST.
 
 Fair-compute guarantee: the single network receives 4 gradient updates per
 env step, matching TEMPEST which updates K=4 community networks once each.

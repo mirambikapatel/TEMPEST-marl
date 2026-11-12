@@ -1,192 +1,209 @@
 # TEMPEST: Multi-Agent RL for Rumour Propagation on Social Networks
 
-Code for the paper "TEMPEST: Modeling Peer Pressure as Social Contagion 
-Using Multi-Agent Reinforcement Learning on Social Networks."
+Code for the paper "TEMPEST: Modeling Peer Pressure as Social Contagion
+Using Multi-Agent Reinforcement Learning on Social Networks"
+(M. Patel, Md. Arquam, S. Kumari; under revision at IEEE Transactions on
+Computational Social Systems).
 
 ## Overview
 
-TEMPEST is a multi-agent reinforcement learning framework for modelling 
-rumour propagation and containment on social networks. Each node is an 
-autonomous agent that chooses to Share, Refute, or Ignore information. 
-The framework combines a peer-pressure contagion kernel, a warm-floor 
-growth-then-fatigue intensity curve, a three-class heterogeneous 
-node-type system with Evolutionary Game Theory payoffs, and a 
-community-partitioned CTDE architecture with per-community GAT-GRU 
-Q-networks.
+TEMPEST is a multi-agent reinforcement learning framework for modelling
+rumour propagation and containment on social networks. Each node is an
+autonomous agent that chooses to Share, Refute or Ignore. The framework
+combines a peer-pressure contagion kernel, a warm-floor growth-then-fatigue
+intensity curve, three behavioural node types with Evolutionary Game Theory
+payoffs, and a community-partitioned CTDE architecture with per-community
+GAT-GRU Q-networks.
 
-## Code Structure
+All code is in `marl_multiseed/`. Results (per-seed JSONs, trained models,
+figures) are not stored in the repository; running the scripts regenerates
+them.
 
-The repository contains only source code. Results (per-seed JSONs, 
-aggregate metrics, figures) are reported in the paper, not stored 
-in the repository. Running the code regenerates all outputs.
+## Code structure
 
-**Core code:**
-- `marl_core.py` — core functions: environment, MARL system, SIR baseline, GraphCache
-- `finaloutbreak.ipynb` — main experimental notebook
+**Core**
+- `marl_core.py`: environment, contagion kernel, MARL system (GAT-GRU
+  Q-networks, CTDE training), classical SIR baseline, greedy heuristic,
+  centralised DQN, `GraphCache`
+- `finaloutbreak.ipynb`: original experimental notebook (BA training,
+  figures 02/02b, post-hoc window analysis). See the note on the Twitter
+  cell below.
 
-**Runners and scripts:**
-- `run_seeds.py` — multi-seed BA experiment runner
-- `run_twitter_sir.py` — classical SIR baseline on Twitter graph
-- `launch_full_run.sh` — orchestrates the full 20-seed pipeline
+**Main 20-seed experiment (Table I)**
+- `run_seeds.py`: multi-seed BA runner (TEMPEST vs. classical SIR)
+- `add_greedy_to_existing.py`, `add_centralized_to_existing.py`: add the
+  greedy heuristic and the centralised DQN to the per-seed results
+- `significance.py`, `make_paper_table.py`, `plot_aggregate.py`,
+  `plot_sustained.py`: statistics, table and plots for the main run
+- `launch_full_run.sh` (repository root): smoke test, then the full 20-seed run
 
-**Analysis and plotting:**
-- `plot_aggregate.py` — aggregate metrics visualization
-- `plot_sustained.py` — sustained infection reduction plots
-- `significance.py` — statistical significance tests
-- `make_paper_table.py` — generates paper tables from result JSONs
+**Revision experiments**
+- `baselines.py`: QDOM-adapted and DRLE-adapted learned-intervention
+  baselines, the no-learning population, refuted/spontaneous tagging of every
+  I→R transition, signed polarization
+- `revision_runner.py`: runs every revision experiment (resumable, parallel)
+- `summarise_v2.py`: turns `results_v2/` into tables (mean ± SEM, paired
+  t-tests against TEMPEST)
+- `REVISION_RUN_INSTRUCTIONS.md`: step-by-step instructions for the above
 
-**Baseline additions:**
-- `add_greedy_to_existing.py` — adds greedy heuristic to result files
-- `add_centralized_to_existing.py` — adds centralised DQN baseline
+**PHEME rumour events**
+- `pheme_prepare.py`: builds each event's follower network (largest connected
+  component) and the real sharing/refutation curves
+- `pheme_runner.py`: trains TEMPEST from scratch on each event network
+- `summarise_pheme.py`: PHEME table (mean ± SEM, paired t-tests)
+- `pheme_compare_v2.py`: shape comparison (RMSE) between simulated and real
+  cumulative sharing and refutation, with the veracity filter
+
+**Twitter zero-shot transfer**
+- `run_twitter_sir.py`: classical SIR baseline on the Twitter graph
+- `run_twitter_transfer_fixed.py`: trains TEMPEST on a BA graph and applies it,
+  without retraining, to the Twitter graph with communities detected on the
+  Twitter graph itself (Louvain if greedy modularity does not finish within an
+  hour)
+
+**Figures**
+- `make_paper_figures.py`: the figures added in the revision
+  (`fig_intensity_T.png`, `fig_ablation_20seeds.png`,
+  `fig_learned_interventions.png`)
 
 ## Datasets
 
-- **Barabási–Albert graphs**: generated internally via NetworkX
-- **Stanford SNAP Twitter ego-network**: download `twitter_combined.txt` 
-  from https://snap.stanford.edu/data/ego-Twitter.html and place in 
-  the project root
+Place the files at these paths, relative to `marl_multiseed/`:
 
-## Running the Code
+| Dataset | Source | Path |
+|---|---|---|
+| Barabási–Albert, Erdős–Rényi, Watts–Strogatz | generated with NetworkX | none |
+| SNAP Twitter ego-network (`twitter_combined.txt`) | https://snap.stanford.edu/data/ego-Twitter.html | `twitter_combined.txt` (or `~/Downloads/`) |
+| SNAP Facebook (`facebook_combined.txt`) | https://snap.stanford.edu/data/ego-Facebook.html | `OUR_program/outbreak/facebook_combined.txt` |
+| PHEME rumour scheme dataset | figshare article 2068650 | `OUR_program/pheme/raw/pheme-rumour-scheme-dataset/` |
 
-Install dependencies:
+The Twitter graph is used as undirected: 81,306 nodes and 1,342,310 edges.
+For PHEME, the five English events whose largest connected component has at
+least 1,000 users are used (Charlie Hebdo, Ottawa shooting, Sydney siege,
+Ferguson, Germanwings crash).
+
+## Installation
+
 ```bash
+cd marl_multiseed
 pip install -r requirements.txt
 ```
 
-Run the main 20-seed experiment:
-```bash
-bash launch_full_run.sh
-```
+`torch-geometric` wheels are build-specific. If `pip install` fails, follow
+the official guide at https://pytorch-geometric.readthedocs.io/ for your
+torch + CUDA/CPU combination.
 
-Or run individual components:
-```bash
-python run_seeds.py           # multi-seed BA training
-python run_twitter_sir.py     # Twitter SIR baseline
-python significance.py        # paired t-tests
-python make_paper_table.py    # generate paper tables
-```
+## Reproducing the paper
 
-Multi-seed runs take multiple hours per seed. For a smoke test, 
-use `run_seeds.py` with a reduced seed count.
+Run everything from `marl_multiseed/`.
 
-## Reproducibility Notes
-
-- Fixed random seed used where applicable (`np.random.seed(0)`)
-- Aggregate results reported in the paper are over 20 independent seeds
-- Trained model weights are not persisted; retraining is required to 
-  reproduce exact per-seed curves. Aggregate statistics are stable 
-  across retraining runs.follow the official install guide at https://pytorch-geometric.readthedocs.io/
-for your exact torch + CUDA/CPU combination.
-
-## Hardware and Runtime
-All experiments were run on a MacBook Pro with an Apple M3Pro chip
-(11-core CPU, 14-core GPU) and 18GB unified memory. GPU acceleration
-was provided by PyTorch's Metal Performance Shaders (MPS) backend.
-A single seed of TEMPEST training on a 5000-node Barab\'asi--Albert
-graph for 80 episodes completes in approximately 23 minutes. Inference
-on the Twitter ego-network ($N = 81,306) completes in under a minute
-on the same hardware without retraining.
-
----
-
-## Running the full pipeline
-
-### 1. Smoke test (optional, ~2 min on a laptop)
+### 1. Main 20-seed experiment
 
 ```bash
-python run_seeds.py --seeds 2 --workers 2 --eps 5 --nodes 500 \
-    --max-time 30 --n-rumours 3 --outdir smoke_test
-```
-
-Check that `smoke_test/aggregate.json` is produced before committing to the full run.
-
-### 2. Full 20-seed paper run
-
-```bash
-python run_seeds.py \
-    --seeds 20 --workers 4 --eps 80 --nodes 5000 \
-    --max-time 60 --n-rumours 10 --n-evals 5 \
-    --outdir multiseed_results
-```
-
-Or use the convenience script (runs smoke test first, then full run, then plots):
-
-```bash
-bash launch_full_run.sh
-```
-
-**Hardware note:** each worker needs ~4–6 GB RAM at 5000 nodes. With 4 workers,
-expect 2–4 hours total on CPU. Use `--workers $(( $(nproc) / 2 ))` to scale.
-
-### 3. Twitter SIR baseline
-
-```bash
-python run_twitter_sir.py
-```
-
-Reads `twitter_combined.txt`. Writes `outputs/twitter_sir_curves.json` and
-`outputs/03_twitter_sir.png`. Fixed random seed (`np.random.seed(0)`).
-
-### 4. Generate paper figures
-
-```bash
-python plot_aggregate.py --indir multiseed_results --outdir figures
-python plot_sustained.py
-```
-
-Produces:
-- `figures/01_I_curve_marl_vs_sir.png` — I-curve with ±1σ band (4 baselines)
-- `figures/02_R_curve_marl_vs_sir.png` — R-curve with ±1σ band (4 baselines)
-- `figures/03_metrics_barchart.png` — bar chart of all metrics with SEM error bars
-- `figures/06_baselines_comparison.png` — peak I / final R / spread reduction comparison
-- `figures/04_sustained_infection.png` — post-containment infection reduction
-- `figures/paper_metrics_table.csv` — paper-ready CSV
-
-### 5. LaTeX table
-
-```bash
+python run_seeds.py --seeds 20 --workers 4 --eps 80 --nodes 5000 \
+    --max-time 60 --n-rumours 10 --n-evals 5 --outdir multiseed_results
+python add_greedy_to_existing.py
+python add_centralized_to_existing.py
+python significance.py
 python make_paper_table.py
 ```
 
-Writes `figures/paper_table.tex`.
+or `bash ../launch_full_run.sh`, which runs a smoke test first.
 
-### 6. Statistical significance tests
+### 2. Revision experiments
 
 ```bash
-python significance.py
+python revision_runner.py --smoke --workers 4              # quick check
+python revision_runner.py --include-optional --seeds 20 --workers 5
+python summarise_v2.py                                     # results_v2/summary.md
 ```
 
-Runs paired t-tests and Wilcoxon signed-rank tests for all baseline pairs.
-Output is printed and saved to `figures/significance.txt`.
+Several experiments (baselines, ablations) are compared seed by seed with the
+main run, so run step 1 first; `revision_runner.py` does not modify
+`multiseed_results/`. The runner is resumable: run the same command again after
+an interruption and finished jobs are skipped. `python revision_runner.py --list` prints the plan.
 
----
+### 3. PHEME
+
+```bash
+python pheme_prepare.py
+python pheme_runner.py --seeds 20 --workers 5
+python summarise_pheme.py
+python pheme_compare_v2.py
+```
+
+### 4. Twitter transfer
+
+```bash
+python run_twitter_sir.py               # writes outputs/twitter_sir_curves.json
+python run_twitter_transfer_fixed.py    # writes outputs/twitter_transfer_fixed/
+```
+
+`run_twitter_transfer_fixed.py` reads the SIR baseline written by
+`run_twitter_sir.py`, so run that first.
+
+### 5. Figures
+
+```bash
+python make_paper_figures.py            # writes figures/
+```
+
+### Where each result in the paper comes from
+
+| Paper result | Experiment | Script that prints or plots it |
+|---|---|---|
+| Comparison of SIR, greedy heuristic, centralised DQN and TEMPEST | `multiseed_results/` | `make_paper_table.py`, `significance.py` |
+| Signed polarization, share of R from active refutation | `results_v2/r_composition`, `results_v2/baselines` | `summarise_v2.py` |
+| Post-hoc window analysis (65.8–92.3%) | `multiseed_results/` | `finaloutbreak.ipynb`, CONTAIN_T window-sensitivity cell |
+| TEMPEST retrained with different T_contain | `results_v2/T_sweep` | `summarise_v2.py` |
+| Parameter sensitivity | `results_v2/sensitivity` | `summarise_v2.py` |
+| Number of partitions K | `results_v2/k_sweep` | `summarise_v2.py` |
+| SIR parameter grid | `results_v2/sir_grid` | `summarise_v2.py` |
+| Component ablations | `results_v2/ablation` | `summarise_v2.py`, `make_paper_figures.py` |
+| Comparison with QDOM and DRLE | `results_v2/baselines` | `summarise_v2.py`, `make_paper_figures.py` |
+| ER, WS and Facebook networks | `results_v2/networks` | `summarise_v2.py` |
+| PHEME events and shape RMSE | `results_v2/pheme` | `summarise_pheme.py`, `pheme_compare_v2.py` |
+| Twitter zero-shot transfer | `outputs/twitter_transfer_fixed/` | `run_twitter_transfer_fixed.py` (`REPORT.md`, `summary.json`) |
+| Rumour intensity and mean infected curve | `multiseed_results/` | `make_paper_figures.py` |
+
+## Notes
+
+- **Metrics no longer reported.** `marl_core.py`, `make_paper_table.py` and
+  `plot_aggregate.py` still compute two metrics from the original submission:
+  influential efficiency and the symmetric polarization |I − R|/(I + R).
+  Neither is reported in the revised paper. Influential efficiency was removed
+  because the PageRank weight cancels in its ratio, so it does not measure
+  influential nodes specifically. Polarization was replaced by the signed
+  polarization (R − I)/(R + I), computed in `baselines.py` and reported by
+  `summarise_v2.py`.
+- **Twitter cell in `finaloutbreak.ipynb`.** The original transfer cell
+  assigns communities with `marl_ba.node_community[:gc_tw.n]`, which covers
+  only the first 5,000 Twitter users; the other 76,306 never act on the
+  policy. The results in the revised paper come from
+  `run_twitter_transfer_fixed.py`, which detects communities on the Twitter
+  graph itself.
+- **Fixed environment parameters.** The contagion and refutation parameters
+  (α_peer = 0.70, β_base = 0.04, p_contain = 0.40, p_growth = 0.10,
+  p_casc = 0.12, p_spont = 0.03), the node-type prior and the payoff matrix are
+  set in `marl_core.py`. `revision_runner.py` overrides them per experiment for
+  the sensitivity analysis.
+
+## Hardware and runtime
+
+All experiments were run on a MacBook Pro with an Apple M3 Pro chip (11-core
+CPU, 14-core GPU) and 18 GB unified memory, using PyTorch's Metal Performance
+Shaders (MPS) backend.
+
+- TEMPEST training on a 5,000-node BA graph for 80 episodes: about 23 minutes
+  per seed.
+- Twitter transfer (N = 81,306): community detection about 2.5 hours (once),
+  then about 6 minutes per evaluation rollout, without retraining.
 
 ## Reproducibility
 
-- Fixed random seed (`np.random.seed(0)`) used for the Twitter SIR baseline.
-- Full multi-seed runs: seeds 0–19, each seeding `random`, `numpy`, and `torch`
-  independently so graph topology, node-type assignment, and initial infected
-  nodes all vary across seeds.
-- Per-seed result files are in `multiseed_results/seed_NNN.json`.
-- Aggregate statistics (mean ± std ± SEM) are in `multiseed_results/aggregate.json`.
-- 20 seeds × 5 evaluation rollouts per seed → 100 total evaluation episodes per
-  condition reported in the paper.
-
----
-
-## Re-aggregating without re-running
-
-```bash
-python run_seeds.py --aggregate-only --outdir multiseed_results
-python plot_aggregate.py --indir multiseed_results --outdir figures
-```
-
----
-
-## Monitoring a run in progress
-
-```bash
-tail -f multiseed_results/logs/seed_000.log
-```
-
-Each seed writes its own log. The main process prints progress to stdout.
+- Seeds 0–19; each seed sets `random`, `numpy` and `torch`, so the graph,
+  node types and initial infected nodes vary across seeds.
+- 20 seeds × 5 evaluation rollouts per seed in the main experiment.
+- `revision_runner.py` and `pheme_runner.py` save trained models under
+  `results_v2/<experiment>/<variant>/models/`, so tables can be recomputed
+  without retraining.

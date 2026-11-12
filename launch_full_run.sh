@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
-# Full 20-seed MARL-DQN paper run
+# Full 20-seed MARL-DQN paper run (main experiment, Table I)
 # 20 seeds × 4 parallel workers × 5000 nodes × 80 episodes
 # Expected wall time: ~1–3 h depending on hardware
-# Logs: multiseed_results/logs/seed_NNN.log  (tail any to watch progress)
+# Logs: marl_multiseed/multiseed_results/logs/seed_NNN.log  (tail any to watch progress)
 
 set -euo pipefail
+
+# The scripts live in marl_multiseed/; run from there wherever this is called from.
+cd "$(dirname "$0")/marl_multiseed"
 
 OUTDIR="multiseed_results"
 
@@ -31,4 +34,4 @@ echo "=== Generating paper figures ==="
 python3 plot_aggregate.py --indir "$OUTDIR" --outdir figures
 
 echo ""
-echo "Done. Figures in ./figures/  |  Metrics in $OUTDIR/aggregate.json"
+echo "Done. Figures in marl_multiseed/figures/  |  Metrics in marl_multiseed/$OUTDIR/aggregate.json"
